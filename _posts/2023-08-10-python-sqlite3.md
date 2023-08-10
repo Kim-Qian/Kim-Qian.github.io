@@ -12,6 +12,8 @@ mindmap: false
 mindmap2: false
 ---
 
+SQLite3是一种轻量级、嵌入式的关系型数据库管理系统。它是一个C语言库，提供了SQL数据库引擎。SQLite3拥有小巧、高性能、可靠、自包含以及无服务器设计等特点。
+
 # [源码仓库E-Notebook_SQLite](https://github.com/Kim-Qian/E-Notebook_SQLite)
 
 该程序实现了一个基于[sqlite3](https://www.sqlite.org/index.html)的记事本功能。

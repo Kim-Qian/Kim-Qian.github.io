@@ -12,109 +12,289 @@ mindmap: false
 mindmap2: false
 ---
 
-前几天有同学找我查一个空指针问题，Java 打印日志时，异常堆栈信息被吞了，导致定位不到出问题的地方。
+SQLite3是一种轻量级、嵌入式的关系型数据库管理系统。它是一个C语言库，提供了SQL数据库引擎。SQLite3拥有小巧、高性能、可靠、自包含以及无服务器设计等特点。
 
-## 现象
+## [源码仓库E-Notebook_SQLite](https://github.com/Kim-Qian/E-Notebook_SQLite)
 
-捕获异常打印日志的代码类似这样：
+该程序实现了一个基于[sqlite3](https://www.sqlite.org/index.html)的记事本功能。
 
-```java
-try {
-    // ...
-} catch (Exception e) {
-    log.error("系统异常 customerCode:{},data:{}", customerCode, data, e);
-    // ...
-}
+支持写入，读取，修改，删除，查找，排序文本等功能，并能按多种方式显示结果。
+
+# [runoob](https://www.runoob.com/sqlite/sqlite-python.html)
+
+## 连接数据库
+下面的 Python 代码显示了如何连接到一个现有的数据库。如果数据库不存在，那么它就会被创建，最后将返回一个数据库对象。
+
+```Python
+#!/usr/bin/python
+
+import sqlite3
+
+conn = sqlite3.connect('test.db')
+
+print ("数据库打开成功")
+```
+在这里，您也可以把数据库名称复制为特定的名称 :memory:，这样就会在 RAM 中创建一个数据库。现在，让我们来运行上面的程序，在当前目录中创建我们的数据库 test.db。您可以根据需要改变路径。保存上面代码到 sqlite.py 文件中，并按如下所示执行。如果数据库成功创建，那么会显示下面所示的消息：
+
+    Open database successfully
+
+## 创建表
+
+下面的 Python 代码段将用于在先前创建的数据库中创建一个表：
+
+```Python
+#!/usr/bin/python
+
+import sqlite3
+
+conn = sqlite3.connect('test.db')
+print ("数据库打开成功")
+c = conn.cursor()
+c.execute('''CREATE TABLE COMPANY
+       (ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(50),
+       SALARY         REAL);''')
+print ("数据表创建成功")
+conn.commit()
+conn.close()
 ```
 
-查到的日志是这样的：
+上述程序执行时，它会在 test.db 中创建 COMPANY 表，并显示下面所示的消息：
 
-```text
-2023-06-26 11:11:11.111 ERROR 1 --- [pool-1-thread-1] c.mazhuang.service.impl.TestServiceImpl  : 系统异常 customerCode:123,data:{"name":"mazhuang","age":18}
-java.lang.NullPointerException: null
+    数据库打开成功
+    数据表创建成功
+
+## INSERT 操作
+
+下面的 Python 程序显示了如何在上面创建的 COMPANY 表中创建记录：
+
+```Python
+#!/usr/bin/python
+
+import sqlite3
+
+conn = sqlite3.connect('test.db')
+c = conn.cursor()
+print ("数据库打开成功")
+
+c.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (1, 'Paul', 32, 'California', 20000.00 )")
+
+c.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (2, 'Allen', 25, 'Texas', 15000.00 )")
+
+c.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (3, 'Teddy', 23, 'Norway', 20000.00 )")
+
+c.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 )")
+
+conn.commit()
+print ("数据插入成功")
+conn.close()
 ```
 
-异常堆栈丢了。
+上述程序执行时，它会在 COMPANY 表中创建给定记录，并会显示以下两行：
 
-## 分析
+    数据库打开成功
+    数据插入成功
 
-在之前的一篇文章里已经验证过这种写法是可以正常打印异常和堆栈信息的：[AI 自动补全的这句日志能正常打印吗？](https://mazhuang.org/2023/05/10/can-this-log-print-work/)
+## SELECT 操作
 
-再三确认代码写法没问题，纳闷之下只好搜索了一下关键词「Java异常堆栈丢失」，发现了这篇文章：[Java异常堆栈丢失的现象及解决方法][1]，这里面提到的问题与我们遇到的一样，而且给出了 Oracle 官方文档里的相关说明：
+下面的 Python 程序显示了如何从前面创建的 COMPANY 表中获取并显示记录：
 
-> [https://www.oracle.com/java/technologies/javase/release-notes-introduction.html][2]
->
-> The compiler in the server VM now provides correct stack backtraces for all "cold" built-in exceptions. For performance purposes, when such an exception is thrown a few times, the method may be recompiled. After recompilation, the compiler may choose a faster tactic using preallocated exceptions that do not provide a stack trace. To disable completely the use of preallocated exceptions, use this new flag: -XX:-OmitStackTraceInFastThrow.
+```Python
+#!/usr/bin/python
+import sqlite3
 
-大致意思就是说，为了提高性能，JVM 会针对一些内建异常进行优化，在这些异常被某方法多次抛出时，JVM 可能会重编译该方法，这时候就可能会使用不提供堆栈信息的预分配异常。如果想要完全禁用预分配异常，可以使用 `-XX:-OmitStackTraceInFastThrow` 参数。
+conn = sqlite3.connect('test.db')
+c = conn.cursor()
+print ("数据库打开成功")
 
-了解到这个信息后，翻了翻从服务上次发版以来的这条日志，果然最早的十几次打印是有异常堆栈的，后面就没有了。
+cursor = c.execute("SELECT id, name, address, salary  from COMPANY")
+for row in cursor:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
 
-## 解决方案
+print ("数据操作成功")
+conn.close()
+```
+上述程序执行时，它会产生以下结果：
 
-- 回溯历史日志，找到正常打印的堆栈信息，定位和解决问题；
-- 也可以考虑在 JVM 参数里加上 `-XX:-OmitStackTraceInFastThrow` 参数，禁用优化；
+```
+数据库打开成功
+ID =  1
+NAME =  Paul
+ADDRESS =  California
+SALARY =  20000.0
 
-## 本地复现
+ID =  2
+NAME =  Allen
+ADDRESS =  Texas
+SALARY =  15000.0
 
-在本地写一个简单的程序复现一下：
+ID =  3
+NAME =  Teddy
+ADDRESS =  Norway
+SALARY =  20000.0
 
-```java
-public class StackTraceInFastThrowDemo {
-    public static void main(String[] args) {
-        int count = 0;
-        boolean flag = true;
-        while (flag) {
-            try {
-                count++;
-                npeTest(null);
-            } catch (Exception e) {
-                int stackTraceLength = e.getStackTrace().length;
-                System.out.printf("count: %d, stacktrace length: %d%n", count, stackTraceLength);
-                if (stackTraceLength == 0) {
-                    flag = false;
-                }
-            }
-        }
-    }
+ID =  4
+NAME =  Mark
+ADDRESS =  Rich-Mond
+SALARY =  65000.0
 
-    public static void npeTest(Integer i) {
-        System.out.println(i.toString());
-    }
-}
+数据操作成功
 ```
 
-不添加 `-XX:-OmitStackTraceInFastThrow` 作为 JVM 参数时，运行结果如下：
+## UPDATE 操作
 
-```text
-...
-count: 5783, stacktrace length: 2
-count: 5784, stacktrace length: 2
-count: 5785, stacktrace length: 0
+下面的 Python 代码显示了如何使用 UPDATE 语句来更新任何记录，然后从 COMPANY 表中获取并显示更新的记录：
 
-Process finished with exit code 0
+```Python
+#!/usr/bin/python
+
+import sqlite3
+
+conn = sqlite3.connect('test.db')
+c = conn.cursor()
+print ("数据库打开成功")
+
+c.execute("UPDATE COMPANY set SALARY = 25000.00 where ID=1")
+conn.commit()
+print "Total number of rows updated :", conn.total_changes
+
+cursor = conn.execute("SELECT id, name, address, salary  from COMPANY")
+for row in cursor:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print ("数据操作成功")
+conn.close()
 ```
 
-在我本机一般运行五六千次后，会出现异常堆栈丢失的情况。
+上述程序执行时，它会产生以下结果：
 
-添加 `-XX:-OmitStackTraceInFastThrow` 作为 JVM 参数时，运行结果如下：
+```
+数据库打开成功
+Total number of rows updated : 1
+ID =  1
+NAME =  Paul
+ADDRESS =  California
+SALARY =  25000.0
 
-```text
-...
-count: 3146938, stacktrace length: 2
-count: 3146939, stacktrace length: 2
-count: 3146940, stacktrace length: 
-Process finished with exit code 137 (interrupted by signal 9: SIGKILL)
+ID =  2
+NAME =  Allen
+ADDRESS =  Texas
+SALARY =  15000.0
+
+ID =  3
+NAME =  Teddy
+ADDRESS =  Norway
+SALARY =  20000.0
+
+ID =  4
+NAME =  Mark
+ADDRESS =  Rich-Mond
+SALARY =  65000.0
+
+数据操作成功
 ```
 
-运行了几百万次也不会出现异常堆栈丢失的情况，手动终止程序。
+## DELETE 操作
 
-完整源码见：<https://github.com/mzlogin/java-notes/blob/master/src/org/mazhuang/StackTraceInFastThrowDemo.java>
+下面的 Python 代码显示了如何使用 DELETE 语句删除任何记录，然后从 COMPANY 表中获取并显示剩余的记录：
 
-## 参考
+```Python
+#!/usr/bin/python
 
-- [https://www.cnblogs.com/junejs/p/12686906.html][1]
-- [https://www.oracle.com/java/technologies/javase/release-notes-introduction.html][2]
+import sqlite3
 
-[1]: https://www.cnblogs.com/junejs/p/12686906.html
-[2]: https://www.oracle.com/java/technologies/javase/release-notes-introduction.html
+conn = sqlite3.connect('test.db')
+c = conn.cursor()
+print ("数据库打开成功")
+
+c.execute("DELETE from COMPANY where ID=2;")
+conn.commit()
+print "Total number of rows deleted :", conn.total_changes
+
+cursor = conn.execute("SELECT id, name, address, salary  from COMPANY")
+for row in cursor:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print ("数据操作成功")
+conn.close()
+```
+
+上述程序执行时，它会产生以下结果：
+
+```
+数据库打开成功
+Total number of rows deleted : 1
+ID =  1
+NAME =  Paul
+ADDRESS =  California
+SALARY =  20000.0
+
+ID =  3
+NAME =  Teddy
+ADDRESS =  Norway
+SALARY =  20000.0
+
+ID =  4
+NAME =  Mark
+ADDRESS =  Rich-Mond
+SALARY =  65000.0
+
+数据操作成功
+```
+
+# 进阶
+
+## 改变SELECT的排序方式
+
+```Python
+cursor = c.execute("SELECT created, title, notes, note_group FROM Data ORDER BY created DESC")
+cursor = c.execute("SELECT created, title, notes, note_group FROM Data ORDER BY created ASC")
+```
+
+即在FROM XXX后加上 ORDER BY DESC或ASC
+
+## SELECT特定的数据，如：
+
+```Python
+"SELECT * FROM students WHERE age > ?"
+```
+就会查找students表中age栏目大于?的记录
+
+## 若发生错误，则回滚事务
+
+```Python
+try:
+   cursor.execute('INSERT INTO users (name, age) VALUES (?, ?)', ('Alice', 30))
+   cursor.execute('INSERT INTO users (name, age) VALUES (?, ?)', ('Bob', 25))
+   conn.commit()
+except:
+   conn.rollback()
+```
+- 请用try, except包围
+
+# 温馨提示
+
+- 创建表格时最好写上
+
+      IF NOT EXISTS
+      
+- 修改数据库完后一定要close()前commit()提交更改
+- update时不要忘记加where条件，否则会更新所有数据，例如在想要更新数据库中一位用户的权限为管理员时，如果没有加上where条件，那么所有用户的权限都会变为管理员
+- 删除数据时不要忘记加where条件，否则会删除所有数据，例如在想要删除数据库中一位用户时，没有加上where条件，那么所有用户都会被删除
+- 占位符要用 ? , 而不是 %s, 一定要注意(?, ?, ?)中的占位符要与待插入的数据个数一致
+- 数据库操作完后一定要close()关闭数据库

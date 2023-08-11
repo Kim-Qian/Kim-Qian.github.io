@@ -1,9 +1,9 @@
 ---
 layout: post
-title: 解决 Java 打印日志吞异常堆栈的问题
-categories: [Java]
-description: 解决 Java 打印日志吞异常堆栈的问题
-keywords: Java
+title: Python如何使用SQLite3？
+categories: [Python, SQLite3]
+description: 该文会比较详细的讲述Python如何使用自带的sqlite3模块。
+keywords: Python, SQLite3, E-Notebook_SQLite
 mermaid: false
 sequence: false
 flow: false

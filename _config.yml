@@ -82,8 +82,8 @@ navs:
     mobile-hidden: true
 
   -
-    href: /wiki/
-    label: Wiki
+    href: /files/
+    label: Files
 
   -
     href: /about/

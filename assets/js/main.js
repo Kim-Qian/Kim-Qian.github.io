@@ -1,3 +1,11 @@
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?a715d80b8a2942dbcbe5b8feb55f1a5e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+
 function toggleMenu() {
   var nav = document.getElementsByClassName("site-header-nav")[0];
   if (nav.style.display == "inline-flex") {
